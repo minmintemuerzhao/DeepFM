@@ -20,7 +20,7 @@ import data_process
 logging.basicConfig(
     format='%(asctime)s : %(levelname)s : %(message)s',
     level=logging.INFO)
-
+os.environ['CUDA_LAUNCH_BLOCKING'] = "1"
 
 def run_trainer(args):
     if torch.cuda.is_available():

@@ -21,7 +21,7 @@ class feature_embedding(nn.Module):
         self.zip_code_embs = self.init_embedding('zip_code')
         self.genres_embs = self.init_embedding('genres')
 
-    def init_embedding(self, feature_type, padding=True):
+    def init_embedding(self, feature_type, padding=False):
         if padding:
             emb = nn.Embedding(
                 embedding_num[feature_type],

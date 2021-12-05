@@ -30,13 +30,14 @@ class JoinedDataset(data.Dataset):
             feature_val = self.data.iloc[index][col]
             result[col] = feature_val
             # 索引需要减1
-            data_vector[data_vector_index + feature_val - 1] = 1
+            data_vector[data_vector_index + feature_val] = 1
             data_vector_index += embedding_num[col]
         for col in self.multi_feature_col:
-            result[col] = torch.tensor(
-                self.data.iloc[index][col] + [0] * (embedding_num[col] - len(self.data.iloc[index][col])))
             # 索引需要减1
-            data_vector[data_vector_index + torch.tensor(self.data.iloc[index][col]) - 1] = 1
+            result[col] = torch.cat(
+                [torch.tensor(self.data.iloc[index][col]),
+                 torch.tensor([0] * (embedding_num[col] - len(self.data.iloc[index][col])))], dim=-1)
+            data_vector[data_vector_index + torch.tensor(self.data.iloc[index][col])] = 1
             data_vector_index += embedding_num[col]
         result[self.label_col] = torch.tensor(self.data.iloc[index][self.label_col])
         result['data_vector'] = data_vector

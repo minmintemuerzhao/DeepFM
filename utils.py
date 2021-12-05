@@ -39,7 +39,7 @@ def data_preprocess(user_file, movie_file, rating_file):
             movieid_feature_dict[movieid] = genres.split("|")
             for genre in movieid_feature_dict[movieid]:
                 genre_set.add(genre)
-    genre_dict = dict(zip(list(genre_set), range(1, len(genre_set) + 1)))
+    genre_dict = dict(zip(list(genre_set), range(len(genre_set))))
     colunms = ["uid", "movieid", "gender", "age", "occ", "zip_code", "genres", "label"]
     data = []
     with open(rating_file) as f:
