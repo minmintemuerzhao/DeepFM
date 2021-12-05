@@ -23,6 +23,10 @@ logging.basicConfig(
 
 
 def run_trainer(args):
+    if torch.cuda.is_available():
+        device = 'cuda'
+    else:
+        device = 'cpu'
     user_file, movie_file, rating_file = args.users_data, args.movies_data, args.ratings_data
     data = data_preprocess(user_file, movie_file, rating_file)
     train_data, test_data = train_test_split(data, test_size=0.2, train_size=0.8, random_state=0)
@@ -42,10 +46,9 @@ def run_trainer(args):
         'pin_memory': True,
         'drop_last': False,
     }
-    training_generator = DataLoader(training_set, **training_params)
-    testing_generator = DataLoader(testing_set, **testing_params)
+    net = DeepFM(device)
 
-    if torch.cuda.is_available():
+    if device == 'cuda':
         torch.distributed.init_process_group(backend='nccl')
         train_sampler = DistributedSampler(training_set)
         test_sampler = DistributedSampler(testing_set)
@@ -54,11 +57,10 @@ def run_trainer(args):
         # 2） 配置每个进程的gpu
         local_rank = args.local_rank
         torch.cuda.set_device(local_rank)
-        device = torch.device("cuda", local_rank)
-    else:
-        device = 'cpu'
-
-    net = DeepFM(device).to(device)
+        model_device = torch.device("cuda", local_rank)
+        net.to(model_device)
+    training_generator = DataLoader(training_set, **training_params)
+    testing_generator = DataLoader(testing_set, **testing_params)
 
     if torch.cuda.device_count() > 1:  # 多卡
         net = torch.nn.parallel.DistributedDataParallel(net,
@@ -120,15 +122,15 @@ def train(net,
             if i != 0 and i % 5000 == 0:
                 total_auc, uid_auc = test(net, testing_generator, device)
                 logging.info(f"test total auc is: {total_auc}, test uid auc is: {uid_auc}")
-            if device != 'cpu':
+            if device == 'cuda':
                 for k in batch:
                     if not isinstance(batch[k], list):
-                        batch[k] = batch[k].to(device, non_blocking=True)
+                        batch[k] = batch[k].to('cuda', non_blocking=True)
             optimizer.zero_grad()
             output = net(batch)
             labels = batch['label'].unsqueeze(-1).float()
-            if device != 'cpu':
-                labels = labels.to(device)
+            if device == 'cuda':
+                labels = labels.cuda()
             loss = criterion(output, labels)
             loss.backward()
             logging.info(f'Epoch {epoch},{i} Loss {loss.item()}')
