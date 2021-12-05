@@ -20,15 +20,7 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="a33ca334-8034-4968-b109-e1806b434fb3" name="Default Changelist" comment="">
-      <change afterPath="$PROJECT_DIR$/data_process.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/metrics.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/movielens/README" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/movielens/movies.dat" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/movielens/ratings.dat" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/movielens/users.dat" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/net.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/train.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/utils.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/requirements.txt" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -56,6 +48,11 @@
     <property name="WebServerToolWindowFactoryState" value="true" />
     <property name="last_opened_file_path" value="$PROJECT_DIR$" />
     <property name="settings.editor.selected.configurable" value="com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable" />
+  </component>
+  <component name="RecentsManager">
+    <key name="CopyFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$" />
+    </key>
   </component>
   <component name="RunManager" selected="Python.train">
     <configuration name="train" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
@@ -121,7 +118,7 @@
       <updated>1638242074056</updated>
       <workItem from="1638242076671" duration="630000" />
       <workItem from="1638258558043" duration="211000" />
-      <workItem from="1638258771267" duration="41794000" />
+      <workItem from="1638258771267" duration="41890000" />
     </task>
     <servers />
   </component>
