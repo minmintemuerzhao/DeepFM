@@ -23,10 +23,6 @@ logging.basicConfig(
 
 
 def run_trainer(args):
-    if torch.cuda.is_available():
-        device = 'cuda'
-    else:
-        device = 'cpu'
     user_file, movie_file, rating_file = args.users_data, args.movies_data, args.ratings_data
     data = data_preprocess(user_file, movie_file, rating_file)
     train_data, test_data = train_test_split(data, test_size=0.2, train_size=0.8, random_state=0)
@@ -46,18 +42,21 @@ def run_trainer(args):
         'pin_memory': True,
         'drop_last': False,
     }
-    if device == 'cuda':
+    training_generator = DataLoader(training_set, **training_params)
+    testing_generator = DataLoader(testing_set, **testing_params)
+
+    if torch.cuda.is_available():
         torch.distributed.init_process_group(backend='nccl')
         train_sampler = DistributedSampler(training_set)
         test_sampler = DistributedSampler(testing_set)
         training_params['sampler'] = train_sampler
         testing_params['sampler'] = test_sampler
         # 2） 配置每个进程的gpu
-        local_rank = torch.distributed.get_rank()
+        local_rank = args.local_rank
         torch.cuda.set_device(local_rank)
         device = torch.device("cuda", local_rank)
-    training_generator = DataLoader(training_set, **training_params)
-    testing_generator = DataLoader(testing_set, **testing_params)
+    else:
+        device = 'cpu'
 
     net = DeepFM(device).to(device)
 
@@ -159,6 +158,8 @@ def main():
     arg_parser.add_argument('--output', help='output model path', default='./model/')
     arg_parser.add_argument('--base_model', nargs='?', default=None, help='use for fine tune')
     arg_parser.add_argument('--base_optimizer', nargs='?', default=None, help='use for fine tune')
+    arg_parser.add_argument('--local_rank', default=-1, type=int,
+                            help='node local rank for distributed training')
     args = arg_parser.parse_args()
     run_trainer(args)
 
