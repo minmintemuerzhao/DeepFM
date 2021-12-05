@@ -155,7 +155,7 @@ def main():
     arg_parser.add_argument("--multi_feature_col", default=["genres"])
     arg_parser.add_argument("--label_col", default="label")
     arg_parser.add_argument('--lr', type=float, help='learning rate', default=0.005)
-    arg_parser.add_argument('--batch', type=int, help='batch_size', default=1024)
+    arg_parser.add_argument('--batch', type=int, help='batch_size', default=2048)
     arg_parser.add_argument('--epoch', type=int, default=4)
     arg_parser.add_argument('--output', help='output model path', default='./model/')
     arg_parser.add_argument('--base_model', nargs='?', default=None, help='use for fine tune')
