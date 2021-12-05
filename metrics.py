@@ -29,7 +29,7 @@ def cal_auc(results):
 
         if uid not in uid_datas:
             uid_datas[uid] = []
-        uid_datas[uid].append((y_label, y_predict))
+        uid_datas[uid].append((label, predict))
 
     sample_auc = metrics.roc_auc_score(y_label, y_predict)
     uid_auc = cal_group_auc(uid_datas)
