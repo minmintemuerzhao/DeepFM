@@ -143,7 +143,8 @@ def train(net,
         torch.save({
             'optimizer_state_dict': optimizer.state_dict(),
         }, OPTIMIZER_SAVE_PATH)
-        total_auc, uid_auc = test(net, testing_generator, device)
+        results = test(net, testing_generator, device)
+        total_auc, uid_auc = cal_auc(results)
         logging.info(f"test total auc is: {total_auc}, test uid auc is: {uid_auc}")
 
 
