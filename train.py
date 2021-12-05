@@ -9,6 +9,8 @@ import torch
 import torch.optim as optim
 import torch.nn as nn
 from torch.utils.data import DataLoader
+from torch.utils.data.distributed import DistributedSampler
+from torch.nn.parallel import DistributedDataParallel as DDP
 from sklearn.model_selection import train_test_split
 
 from utils import data_preprocess
@@ -44,11 +46,25 @@ def run_trainer(args):
         'pin_memory': True,
         'drop_last': False,
     }
+    if device == 'cuda':
+        torch.distributed.init_process_group(backend='nccl')
+        train_sampler = DistributedSampler(training_set)
+        test_sampler = DistributedSampler(testing_set)
+        training_params['sampler'] = train_sampler
+        testing_params['sampler'] = test_sampler
+        # 2） 配置每个进程的gpu
+        local_rank = torch.distributed.get_rank()
+        torch.cuda.set_device(local_rank)
+        device = torch.device("cuda", local_rank)
     training_generator = DataLoader(training_set, **training_params)
     testing_generator = DataLoader(testing_set, **testing_params)
-    net = DeepFM(device)
-    if device == 'cuda':
-        net.cuda()
+
+    net = DeepFM(device).to(device)
+
+    if torch.cuda.device_count() > 1:  # 多卡
+        net = torch.nn.parallel.DistributedDataParallel(net,
+                                                        device_ids=[local_rank],
+                                                        output_device=local_rank)
     # Setup optimizer
     optimizer = optim.Adam(net.parameters(), lr=args.lr)
     # 如果是接着训练的话，需要把上次的训练结果导入，然后继续进行训练
