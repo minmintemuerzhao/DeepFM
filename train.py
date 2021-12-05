@@ -99,8 +99,7 @@ def test(net, testing_generator, device='cpu'):
             for k in batch:
                 if not isinstance(batch[k], list):
                     batch[k] = batch[k].to(device, non_blocking=True)
-
-            outs = net.predict(batch)
+            outs = net.module.predict(batch) if device != 'cpu' else net.predict(batch)
             for uid, label, predict in zip(
                     batch['uid'].tolist(), batch['label'].tolist(), outs.tolist()):
                 results.append((uid, label, predict))
