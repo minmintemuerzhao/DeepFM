@@ -28,13 +28,13 @@ class feature_embedding(nn.Module):
                 embedding_dim[feature_type],
                 padding_idx=0
             )
-            return emb.to('cuda', non_blocking=True) if self.device == 'gpu' else emb
+            return emb.to(self.device, non_blocking=True)
         else:
             emb = nn.Embedding(
                 embedding_num[feature_type],
                 embedding_dim[feature_type],
             )
-            return emb.to('cuda', non_blocking=True) if self.device == 'gpu' else emb
+            return emb.to(self.device, non_blocking=True)
 
     def forward(self, batch):
         return {
@@ -54,7 +54,7 @@ class DeepFM(nn.Module):
 
         # 定好随机种子, 保证每次重新运行时，相同的输入得到相同的输出
         torch.manual_seed(0)
-        if device == 'gpu':
+        if device == 'cuda':
             torch.backends.cudnn.deterministic = True
             torch.backends.cudnn.benchmark = False
 

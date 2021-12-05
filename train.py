@@ -22,7 +22,7 @@ logging.basicConfig(
 
 def run_trainer(args):
     if torch.cuda.is_available():
-        device = 'gpu'
+        device = 'cuda'
     else:
         device = 'cpu'
     user_file, movie_file, rating_file = args.users_data, args.movies_data, args.ratings_data
@@ -47,7 +47,7 @@ def run_trainer(args):
     training_generator = DataLoader(training_set, **training_params)
     testing_generator = DataLoader(testing_set, **testing_params)
     net = DeepFM(device)
-    if device == 'gpu':
+    if device == 'cuda':
         net.cuda()
     # Setup optimizer
     optimizer = optim.Adam(net.parameters(), lr=args.lr)
@@ -79,10 +79,9 @@ def test(net, testing_generator, device='cpu'):
     results = []
     with torch.no_grad():
         for i, batch in enumerate(testing_generator):
-            if device == 'gpu':
-                for k in batch:
-                    if not isinstance(batch[k], list):
-                        batch[k] = batch[k].to('cuda', non_blocking=True)
+            for k in batch:
+                if not isinstance(batch[k], list):
+                    batch[k] = batch[k].to(device, non_blocking=True)
 
             outs = net.predict(batch)
             for uid, label, predict in zip(
@@ -106,14 +105,14 @@ def train(net,
             if i != 0 and i % 5000 == 0:
                 total_auc, uid_auc = test(net, testing_generator, device)
                 logging.info(f"test total auc is: {total_auc}, test uid auc is: {uid_auc}")
-            if device == 'gpu':
+            if device == 'cuda':
                 for k in batch:
                     if not isinstance(batch[k], list):
                         batch[k] = batch[k].to('cuda', non_blocking=True)
             optimizer.zero_grad()
             output = net(batch)
             labels = batch['label'].unsqueeze(-1).float()
-            if device == 'gpu':
+            if device == 'cuda':
                 labels = labels.cuda()
             loss = criterion(output, labels)
             loss.backward()
@@ -139,7 +138,7 @@ def main():
     arg_parser.add_argument("--multi_feature_col", default=["genres"])
     arg_parser.add_argument("--label_col", default="label")
     arg_parser.add_argument('--lr', type=float, help='learning rate', default=0.005)
-    arg_parser.add_argument('--batch', type=int, help='batch_size', default=512)
+    arg_parser.add_argument('--batch', type=int, help='batch_size', default=1024)
     arg_parser.add_argument('--epoch', type=int, default=4)
     arg_parser.add_argument('--output', help='output model path', default='./model/')
     arg_parser.add_argument('--base_model', nargs='?', default=None, help='use for fine tune')
