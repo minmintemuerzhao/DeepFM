@@ -25,6 +25,10 @@ os.environ['CUDA_LAUNCH_BLOCKING'] = "1"
 def run_trainer(args):
     if torch.cuda.is_available():
         device = 'cuda'
+        # 2） 配置每个进程的gpu
+        local_rank = args.local_rank
+        torch.cuda.set_device(local_rank)
+        model_device = torch.device("cuda", local_rank)
     else:
         device = 'cpu'
     user_file, movie_file, rating_file = args.users_data, args.movies_data, args.ratings_data
@@ -46,7 +50,7 @@ def run_trainer(args):
         'pin_memory': True,
         'drop_last': False,
     }
-    net = DeepFM(device)
+    net = DeepFM(model_device)
 
     if device == 'cuda':
         torch.distributed.init_process_group(backend='nccl')
@@ -54,10 +58,6 @@ def run_trainer(args):
         test_sampler = DistributedSampler(testing_set)
         training_params['sampler'] = train_sampler
         testing_params['sampler'] = test_sampler
-        # 2） 配置每个进程的gpu
-        local_rank = args.local_rank
-        torch.cuda.set_device(local_rank)
-        model_device = torch.device("cuda", local_rank)
         net.to(model_device)
     training_generator = DataLoader(training_set, **training_params)
     testing_generator = DataLoader(testing_set, **testing_params)
