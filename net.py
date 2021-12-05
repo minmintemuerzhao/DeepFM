@@ -39,12 +39,12 @@ class feature_embedding(nn.Module):
     def forward(self, batch):
         return {
             'uid': self.uid_embs(batch['uid']),
-            'movieid': self.uid_embs(batch['movieid']),
-            'gender': self.uid_embs(batch['gender']),
-            'age': self.uid_embs(batch['age']),
-            'occ': self.uid_embs(batch['occ']),
-            'zip_code': self.uid_embs(batch['zip_code']),
-            'genres': torch.mean(self.uid_embs(batch['genres']), dim=-2),
+            'movieid': self.movieid_embs(batch['movieid']),
+            'gender': self.gender_embs(batch['gender']),
+            'age': self.age_embs(batch['age']),
+            'occ': self.occ_embs(batch['occ']),
+            'zip_code': self.zip_code_embs(batch['zip_code']),
+            'genres': torch.mean(self.genres_embs(batch['genres']), dim=-2),
         }
 
 
