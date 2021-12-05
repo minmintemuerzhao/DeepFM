@@ -13,6 +13,7 @@ from torch.utils.data.distributed import DistributedSampler
 from torch.nn.parallel import DistributedDataParallel as DDP
 from sklearn.model_selection import train_test_split
 
+from metrics import cal_auc
 from utils import data_preprocess
 from net import DeepFM
 import data_process
@@ -119,7 +120,8 @@ def train(net,
     for epoch in range(epochs):
         for i, batch in enumerate(training_generator):
             if i != 0 and i % 5000 == 0:
-                total_auc, uid_auc = test(net, testing_generator, device)
+                results = test(net, testing_generator, device)
+                total_auc, uid_auc = cal_auc(results)
                 logging.info(f"test total auc is: {total_auc}, test uid auc is: {uid_auc}")
             if device == 'cuda':
                 for k in batch:

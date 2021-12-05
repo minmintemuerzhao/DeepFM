@@ -6,10 +6,10 @@ from sklearn import metrics
 
 def cal_group_auc(datas):
     uid_auc_list = []
-    for uid, data_list in datas:
+    for _, data_list in datas:
         labels = []
         scores = []
-        for label, score in datas:
+        for label, score in data_list:
             labels.append(label)
             scores.append(score)
         uid_auc = metrics.roc_auc_score(labels, scores)
