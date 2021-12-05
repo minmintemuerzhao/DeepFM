@@ -12,6 +12,9 @@ def cal_group_auc(datas):
         for label, score in data_list:
             labels.append(label)
             scores.append(score)
+        unique_label = set(labels)
+        if len(unique_label) <= 1:
+            continue
         uid_auc = metrics.roc_auc_score(labels, scores)
         uid_auc_list.append(uid_auc)
     return sum(uid_auc_list) / len(uid_auc_list) if uid_auc_list != 0 else -1
