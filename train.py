@@ -42,7 +42,7 @@ def run_trainer(args):
         'batch_size': args.batch,
         'num_workers': 6,
         'drop_last': True,
-        'shuffle': True,
+        'shuffle': False,
     }
     testing_params = {
         'batch_size': 512,
