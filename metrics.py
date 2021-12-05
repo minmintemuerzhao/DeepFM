@@ -6,7 +6,7 @@ from sklearn import metrics
 
 def cal_group_auc(datas):
     uid_auc_list = []
-    for _, data_list in datas:
+    for _, data_list in datas.items():
         labels = []
         scores = []
         for label, score in data_list:
