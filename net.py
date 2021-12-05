@@ -59,10 +59,10 @@ class DeepFM(nn.Module):
             torch.backends.cudnn.benchmark = False
 
         self.embeddings = feature_embedding(device)
-        # self.w = torch.ones((sum(embedding_num.values()), 1), device=device)
-        # self.b = torch.zeros((1,), device=device)
-        self.w = torch.ones((sum(embedding_num.values()), 1))
-        self.b = torch.zeros((1,))
+        self.w = torch.ones((sum(embedding_num.values()), 1), device=device)
+        self.b = torch.zeros((1,), device=device)
+        # self.w = torch.ones((sum(embedding_num.values()), 1))
+        # self.b = torch.zeros((1,))
         self.hidden_units = [64, 32, 1]
         self.sigmoid = nn.Sigmoid()
         self.dnn = self.dnn(sum(embedding_dim.values()), self.hidden_units)
