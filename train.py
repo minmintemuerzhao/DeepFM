@@ -120,15 +120,15 @@ def train(net,
             if i != 0 and i % 5000 == 0:
                 total_auc, uid_auc = test(net, testing_generator, device)
                 logging.info(f"test total auc is: {total_auc}, test uid auc is: {uid_auc}")
-            if device == 'cuda':
+            if device != 'cpu':
                 for k in batch:
                     if not isinstance(batch[k], list):
-                        batch[k] = batch[k].to('cuda', non_blocking=True)
+                        batch[k] = batch[k].to(device, non_blocking=True)
             optimizer.zero_grad()
             output = net(batch)
             labels = batch['label'].unsqueeze(-1).float()
-            if device == 'cuda':
-                labels = labels.cuda()
+            if device != 'cpu':
+                labels = labels.to(device)
             loss = criterion(output, labels)
             loss.backward()
             logging.info(f'Epoch {epoch},{i} Loss {loss.item()}')

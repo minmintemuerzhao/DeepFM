@@ -54,7 +54,7 @@ class DeepFM(nn.Module):
 
         # 定好随机种子, 保证每次重新运行时，相同的输入得到相同的输出
         torch.manual_seed(0)
-        if device == 'cuda':
+        if device != 'cpu':
             torch.backends.cudnn.deterministic = True
             torch.backends.cudnn.benchmark = False
 
