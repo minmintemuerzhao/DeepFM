@@ -3,7 +3,6 @@
 
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 
 from utils import embedding_dim
 from utils import embedding_num
@@ -98,10 +97,11 @@ class DeepFM(nn.Module):
         two_stage = (1 / 2) * torch.sum(
             torch.sub(sum_square_feature_embs, squared_sum_feature_embs), dim=-1, keepdim=True)
         fm_stage = one_stage + two_stage
-        # dnn
-        embedding_concat = torch.cat(list(embedding_result.values()), dim=-1)
-        result = self.network(embedding_concat)
-        return self.sigmoid(one_stage + fm_stage + result)
+        # # dnn
+        # embedding_concat = torch.cat(list(embedding_result.values()), dim=-1)
+        # result = self.network(embedding_concat)
+        # return self.sigmoid(fm_stage + result)
+        return self.sigmoid(fm_stage)
 
     def predict(self, batch):
         outs = self.forward(batch)

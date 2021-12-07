@@ -32,6 +32,7 @@ def run_trainer(args):
         model_device = torch.device("cuda", local_rank)
     else:
         device = 'cpu'
+        model_device = 'cpu'
     user_file, movie_file, rating_file = args.users_data, args.movies_data, args.ratings_data
     data = data_preprocess(user_file, movie_file, rating_file)
     train_data, test_data = train_test_split(data, test_size=0.2, train_size=0.8, random_state=0)
