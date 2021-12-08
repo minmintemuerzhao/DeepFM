@@ -9,9 +9,8 @@ from utils import embedding_num
 
 
 class feature_embedding(nn.Module):
-    def __init__(self, device='cpu'):
+    def __init__(self):
         super(feature_embedding, self).__init__()
-        self.device = device
         self.uid_embs = self.init_embedding('uid')
         self.movieid_embs = self.init_embedding('movieid')
         self.gender_embs = self.init_embedding('gender')
@@ -27,13 +26,13 @@ class feature_embedding(nn.Module):
                 embedding_dim[feature_type],
                 padding_idx=0
             )
-            return emb.to(self.device, non_blocking=True)
+            return emb.to(non_blocking=True)
         else:
             emb = nn.Embedding(
                 embedding_num[feature_type],
                 embedding_dim[feature_type],
             )
-            return emb.to(self.device, non_blocking=True)
+            return emb.to(non_blocking=True)
 
     def forward(self, batch):
         return {
@@ -48,20 +47,14 @@ class feature_embedding(nn.Module):
 
 
 class DeepFM(nn.Module):
-    def __init__(self, device='cpu'):
+    def __init__(self):
         super(DeepFM, self).__init__()
-
         # 定好随机种子, 保证每次重新运行时，相同的输入得到相同的输出
         torch.manual_seed(0)
-        if device != 'cpu':
-            torch.backends.cudnn.deterministic = True
-            torch.backends.cudnn.benchmark = False
 
-        self.embeddings = feature_embedding(device)
-        self.w = torch.ones((sum(embedding_num.values()), 1), device=device)
-        self.b = torch.zeros((1,), device=device)
-        # self.w = torch.ones((sum(embedding_num.values()), 1))
-        # self.b = torch.zeros((1,))
+        self.embeddings = feature_embedding()
+        self.w = torch.nn.Parameter(torch.ones((sum(embedding_num.values()), 1)))
+        self.b = torch.nn.Parameter(torch.zeros(1,),)
         self.hidden_units = [64, 32, 1]
         self.sigmoid = nn.Sigmoid()
         self.dnn = self.dnn(sum(embedding_dim.values()), self.hidden_units)
@@ -97,11 +90,11 @@ class DeepFM(nn.Module):
         two_stage = (1 / 2) * torch.sum(
             torch.sub(sum_square_feature_embs, squared_sum_feature_embs), dim=-1, keepdim=True)
         fm_stage = one_stage + two_stage
-        # # dnn
-        # embedding_concat = torch.cat(list(embedding_result.values()), dim=-1)
-        # result = self.network(embedding_concat)
-        # return self.sigmoid(fm_stage + result)
-        return self.sigmoid(fm_stage)
+        # dnn
+        embedding_concat = torch.cat(list(embedding_result.values()), dim=-1)
+        result = self.network(embedding_concat)
+        return self.sigmoid(fm_stage + result)
+
 
     def predict(self, batch):
         outs = self.forward(batch)

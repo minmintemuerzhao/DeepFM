@@ -10,7 +10,6 @@ import torch.optim as optim
 import torch.nn as nn
 from torch.utils.data import DataLoader
 from torch.utils.data.distributed import DistributedSampler
-from torch.nn.parallel import DistributedDataParallel as DDP
 from sklearn.model_selection import train_test_split
 
 from metrics import cal_auc
@@ -24,15 +23,6 @@ logging.basicConfig(
 os.environ['CUDA_LAUNCH_BLOCKING'] = "1"
 
 def run_trainer(args):
-    if torch.cuda.is_available():
-        device = 'cuda'
-        # 2） 配置每个进程的gpu
-        local_rank = args.local_rank
-        torch.cuda.set_device(local_rank)
-        model_device = torch.device("cuda", local_rank)
-    else:
-        device = 'cpu'
-        model_device = 'cpu'
     user_file, movie_file, rating_file = args.users_data, args.movies_data, args.ratings_data
     data = data_preprocess(user_file, movie_file, rating_file)
     train_data, test_data = train_test_split(data, test_size=0.2, train_size=0.8, random_state=0)
@@ -52,15 +42,21 @@ def run_trainer(args):
         'pin_memory': True,
         'drop_last': False,
     }
-    net = DeepFM(model_device)
+    net = DeepFM()
+    device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
     if device == 'cuda':
+        # 配置每个进程的gpu
+        local_rank = args.local_rank
+        torch.cuda.set_device(local_rank)
+        torch.backends.cudnn.deterministic = True
+        torch.backends.cudnn.benchmark = False
         torch.distributed.init_process_group(backend='nccl')
         train_sampler = DistributedSampler(training_set)
         test_sampler = DistributedSampler(testing_set)
         training_params['sampler'] = train_sampler
         testing_params['sampler'] = test_sampler
-        net.to(model_device)
+        net.to(device)
     training_generator = DataLoader(training_set, **training_params)
     testing_generator = DataLoader(testing_set, **testing_params)
 
@@ -88,14 +84,14 @@ def run_trainer(args):
         'testing_generator': testing_generator,
         'model_name': os.path.join(args.output, 'model.bin'),
         'optimizer_name': os.path.join(args.output, 'optimizer.pkl'),
-        'device': device,
     }
     train(**train_params)
 
 
-def test(net, testing_generator, device='cpu'):
+def test(net, testing_generator):
     net.eval()
     results = []
+    device = 'cuda' if torch.cuda.is_available() else 'cpu'
     with torch.no_grad():
         for i, batch in enumerate(testing_generator):
             for k in batch:
@@ -116,12 +112,12 @@ def train(net,
           training_generator,
           testing_generator,
           model_name,
-          optimizer_name,
-          device='cpu'):
+          optimizer_name):
+    device = 'cuda' if torch.cuda.is_available() else 'cpu'
     for epoch in range(epochs):
         for i, batch in enumerate(training_generator):
             if i != 0 and i % 5000 == 0:
-                results = test(net, testing_generator, device)
+                results = test(net, testing_generator)
                 total_auc, uid_auc = cal_auc(results)
                 logging.info(f"test total auc is: {total_auc}, test uid auc is: {uid_auc}")
             if device == 'cuda':
@@ -131,10 +127,10 @@ def train(net,
             optimizer.zero_grad()
             output = net(batch)
             labels = batch['label'].unsqueeze(-1).float()
-            if device == 'cuda':
-                labels = labels.cuda()
+            labels = labels.to(device)
             loss = criterion(output, labels)
             loss.backward()
+            optimizer.step()
             logging.info(f'Epoch {epoch},{i} Loss {loss.item()}')
         MODEL_SAVE_PATH = f'{model_name}.{epoch}'
         OPTIMIZER_SAVE_PATH = f'{optimizer_name}.{epoch}'
@@ -144,7 +140,7 @@ def train(net,
         torch.save({
             'optimizer_state_dict': optimizer.state_dict(),
         }, OPTIMIZER_SAVE_PATH)
-        results = test(net, testing_generator, device)
+        results = test(net, testing_generator)
         total_auc, uid_auc = cal_auc(results)
         logging.info(f"test total auc is: {total_auc}, test uid auc is: {uid_auc}")
 
