@@ -85,6 +85,8 @@ def run_trainer(args):
         'model_name': os.path.join(args.output, 'model.bin'),
         'optimizer_name': os.path.join(args.output, 'optimizer.pkl'),
     }
+    if not os.path.exists(args.output):
+        os.makedirs(args.output)
     train(**train_params)
 
 

@@ -98,7 +98,6 @@ class DeepFM(nn.Module):
 
     def predict(self, batch):
         outs = self.forward(batch)
-
         if len(outs.shape) == 1:  # when predict size is 1
             outs = outs.unsqueeze(0)
         return outs
