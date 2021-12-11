@@ -47,8 +47,7 @@ def run_trainer(args):
 
     if device == 'cuda':
         # 配置每个进程的gpu
-        local_rank = args.local_rank
-        torch.cuda.set_device(local_rank)
+        torch.cuda.set_device(args.local_rank)
         torch.backends.cudnn.deterministic = True
         torch.backends.cudnn.benchmark = False
         torch.distributed.init_process_group(backend='nccl')
@@ -60,10 +59,6 @@ def run_trainer(args):
     training_generator = DataLoader(training_set, **training_params)
     testing_generator = DataLoader(testing_set, **testing_params)
 
-    if torch.cuda.device_count() > 1:  # 多卡
-        net = torch.nn.parallel.DistributedDataParallel(net,
-                                                        device_ids=[local_rank],
-                                                        output_device=local_rank)
     # Setup optimizer
     optimizer = optim.Adam(net.parameters(), lr=args.lr)
     # 如果是接着训练的话，需要把上次的训练结果导入，然后继续进行训练
@@ -73,6 +68,17 @@ def run_trainer(args):
         for g in optimizer.param_groups:
             g['lr'] = args.lr
         del ckpt
+    # For continuous training
+    if args.base_model is not None:
+        checkpoint = torch.load(args.base_model, map_location=device)
+        net.load_state_dict(checkpoint['model_state_dict'])
+        net.train()
+        del checkpoint
+
+    if torch.cuda.device_count() > 1:  # 多卡
+        net = torch.nn.parallel.DistributedDataParallel(net,
+                                                        device_ids=[args.local_rank],
+                                                        output_device=args.local_rank)
     criterion = nn.BCELoss()
 
     train_params = {
@@ -84,6 +90,7 @@ def run_trainer(args):
         'testing_generator': testing_generator,
         'model_name': os.path.join(args.output, 'model.bin'),
         'optimizer_name': os.path.join(args.output, 'optimizer.pkl'),
+        'local_rank': args.local_rank,
     }
     if not os.path.exists(args.output):
         os.makedirs(args.output)
@@ -114,7 +121,8 @@ def train(net,
           training_generator,
           testing_generator,
           model_name,
-          optimizer_name):
+          optimizer_name,
+          local_rank=-1):
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     for epoch in range(epochs):
         for i, batch in enumerate(training_generator):
@@ -136,12 +144,22 @@ def train(net,
             logging.info(f'Epoch {epoch},{i} Loss {loss.item()}')
         MODEL_SAVE_PATH = f'{model_name}.{epoch}'
         OPTIMIZER_SAVE_PATH = f'{optimizer_name}.{epoch}'
-        torch.save({
-            'model_state_dict': net.state_dict(),
-        }, MODEL_SAVE_PATH)
-        torch.save({
-            'optimizer_state_dict': optimizer.state_dict(),
-        }, OPTIMIZER_SAVE_PATH)
+        if local_rank == -1:
+            # local_rank为-1，则是按照cpu的方式存储
+            torch.save({
+                'model_state_dict': net.state_dict(),
+            }, MODEL_SAVE_PATH)
+            torch.save({
+                'optimizer_state_dict': optimizer.state_dict(),
+            }, OPTIMIZER_SAVE_PATH)
+        elif local_rank == 0:
+            # local_rank为0，则让0号显卡来存储模型
+            torch.save({
+                'model_state_dict': net.module.state_dict(),
+            }, MODEL_SAVE_PATH)
+            torch.save({
+                'optimizer_state_dict': optimizer.state_dict(),
+            }, OPTIMIZER_SAVE_PATH)
         results = test(net, testing_generator)
         total_auc, uid_auc = cal_auc(results)
         logging.info(f"test total auc is: {total_auc}, test uid auc is: {uid_auc}")
