@@ -79,7 +79,7 @@ def run_trainer(args):
         net = torch.nn.parallel.DistributedDataParallel(net,
                                                         device_ids=[args.local_rank],
                                                         output_device=args.local_rank)
-    criterion = nn.BCELoss()
+    criterion = nn.NLLLoss()
 
     train_params = {
         'net': net,
@@ -136,8 +136,7 @@ def train(net,
                         batch[k] = batch[k].to('cuda', non_blocking=True)
             optimizer.zero_grad()
             output = net(batch)
-            labels = batch['label'].unsqueeze(-1).float()
-            labels = labels.to(device)
+            labels = batch['label'].to(device)
             loss = criterion(output, labels)
             loss.backward()
             optimizer.step()
