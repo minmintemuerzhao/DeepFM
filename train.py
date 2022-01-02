@@ -44,9 +44,10 @@ def run_trainer(args):
     }
     net = DeepFM()
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
-
+    train_sampler = None
     if device == 'cuda':
         # 配置每个进程的gpu
+        torch.cuda.set_device(args.local_rank)
         torch.backends.cudnn.deterministic = True
         torch.backends.cudnn.benchmark = False
         torch.distributed.init_process_group(backend='nccl')
@@ -90,7 +91,7 @@ def run_trainer(args):
         'model_name': os.path.join(args.output, 'model.bin'),
         'optimizer_name': os.path.join(args.output, 'optimizer.pkl'),
         'local_rank': args.local_rank,
-        'training_params': training_params if training_params is not None else None,
+        'train_sampler': train_sampler,
     }
     if not os.path.exists(args.output):
         os.makedirs(args.output)
@@ -123,10 +124,11 @@ def train(net,
           model_name,
           optimizer_name,
           local_rank=-1,
-          training_params=None):
+          train_sampler=None):
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     for epoch in range(epochs):
-        training_params.set_epoch(epoch)
+        if train_sampler:
+            train_sampler.set_epoch(epoch)
         for i, batch in enumerate(training_generator):
             if i != 0 and i % 5000 == 0:
                 results = test(net, testing_generator)
