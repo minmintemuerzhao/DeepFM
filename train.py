@@ -47,6 +47,7 @@ def run_trainer(args):
     train_sampler = None
     if device == 'cuda':
         # 配置每个进程的gpu
+        # 需要配置下当前gpu的rank
         torch.cuda.set_device(args.local_rank)
         torch.backends.cudnn.deterministic = True
         torch.backends.cudnn.benchmark = False
@@ -75,7 +76,7 @@ def run_trainer(args):
         net.train()
         del checkpoint
 
-    if torch.cuda.device_count() > 1:  # 多卡
+    if torch.cuda.device_count() > 1:  # 多卡, 需要设置下device配置
         net = torch.nn.parallel.DistributedDataParallel(net,
                                                         device_ids=[args.local_rank],
                                                         output_device=args.local_rank)
