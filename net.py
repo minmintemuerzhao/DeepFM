@@ -55,8 +55,8 @@ class DeepFM(nn.Module):
         self.embeddings = feature_embedding()
         self.w = torch.nn.Parameter(torch.ones((sum(embedding_num.values()), 1)))
         self.b = torch.nn.Parameter(torch.zeros(1,),)
-        self.hidden_units = [64, 32, 2]
-        self.sigmoid = nn.LogSigmoid()
+        self.hidden_units = [64, 32, 1]
+        self.sigmoid = nn.Sigmoid()
         self.dnn = self.dnn(sum(embedding_dim.values()), self.hidden_units)
 
     def dnn(self, input_dim, hidden_units, use_bn=False, dropout_rate=0):
